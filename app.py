@@ -5,30 +5,12 @@ Advanced Huffman Coding Compression Analyzer
 This Streamlit application demonstrates the Huffman Coding algorithm,
 a widely used lossless data compression technique in multimedia systems.
 
-Huffman coding works by assigning variable-length binary codes to
-characters based on their frequency of occurrence. Characters that
-appear more frequently are assigned shorter binary codes, while rare
-characters receive longer codes.
-
-This technique minimizes the total number of bits required to represent
-the data, making it efficient for storage and transmission.
-
-Applications of Huffman Coding
-------------------------------
-- JPEG Image Compression
-- MPEG Video Compression
-- ZIP File Compression
-- MP3 Audio Compression
-
-Features of this Application
-----------------------------
-1. Character Frequency Analysis
-2. Huffman Tree Construction
-3. Huffman Code Generation
-4. Binary Encoding of Text
-5. Decoding Verification
-6. Compression Efficiency Analysis
-7. Huffman Tree Visualization
+It includes:
+1. Text compression using Huffman Coding
+2. Huffman tree visualization
+3. Encoding and decoding
+4. Compression efficiency analysis
+5. JPEG-style image compression demo
 
 Author : Manish U
 """
@@ -37,6 +19,8 @@ import streamlit as st
 import heapq
 from collections import defaultdict
 from graphviz import Digraph
+from PIL import Image
+import numpy as np
 
 
 # ==========================================================
@@ -44,26 +28,6 @@ from graphviz import Digraph
 # ==========================================================
 
 class Node:
-    """
-    Represents a single node in the Huffman Tree.
-
-    Parameters
-    ----------
-    char : str
-        Character stored in the node.
-        Internal nodes will have value None.
-
-    freq : int
-        Frequency of the character in the input text.
-
-    Attributes
-    ----------
-    left : Node
-        Left child node (represents binary '0').
-
-    right : Node
-        Right child node (represents binary '1').
-    """
 
     def __init__(self, char, freq):
         self.char = char
@@ -72,47 +36,14 @@ class Node:
         self.right = None
 
     def __lt__(self, other):
-        """
-        Enables comparison of Node objects inside a
-        priority queue (min heap).
-
-        The node with smaller frequency is given higher priority.
-        """
         return self.freq < other.freq
 
 
 # ==========================================================
-# Frequency Analysis
+# Frequency Table
 # ==========================================================
 
 def build_frequency_table(text):
-    """
-    Computes the frequency of each character in the input text.
-
-    This information is essential for constructing the Huffman Tree.
-
-    Parameters
-    ----------
-    text : str
-        Input text provided by the user.
-
-    Returns
-    -------
-    dict
-        Dictionary mapping each character to its frequency.
-
-    Example
-    -------
-    Input: "hello"
-
-    Output:
-    {
-        'h':1,
-        'e':1,
-        'l':2,
-        'o':1
-    }
-    """
 
     freq = defaultdict(int)
 
@@ -123,32 +54,10 @@ def build_frequency_table(text):
 
 
 # ==========================================================
-# Huffman Tree Construction
+# Build Huffman Tree
 # ==========================================================
 
 def build_huffman_tree(freq):
-    """
-    Constructs the Huffman Tree using a priority queue.
-
-    Algorithm
-    ---------
-    1. Create a leaf node for each character.
-    2. Insert all nodes into a min heap.
-    3. Repeatedly remove two nodes with the smallest frequency.
-    4. Create a new internal node with combined frequency.
-    5. Insert the new node back into the heap.
-    6. Repeat until only one node remains (root).
-
-    Parameters
-    ----------
-    freq : dict
-        Frequency table generated from the input text.
-
-    Returns
-    -------
-    Node
-        Root node of the constructed Huffman Tree.
-    """
 
     heap = []
 
@@ -170,35 +79,10 @@ def build_huffman_tree(freq):
 
 
 # ==========================================================
-# Huffman Code Generation
+# Generate Huffman Codes
 # ==========================================================
 
 def generate_codes(node, current_code="", codes=None):
-    """
-    Traverses the Huffman Tree and generates binary codes
-    for each character.
-
-    Tree Traversal Rule
-    -------------------
-    Left Edge  → append '0'
-    Right Edge → append '1'
-
-    Parameters
-    ----------
-    node : Node
-        Current node in the Huffman tree.
-
-    current_code : str
-        Binary code constructed during traversal.
-
-    codes : dict
-        Dictionary storing final character → code mapping.
-
-    Returns
-    -------
-    dict
-        Mapping of characters to their Huffman binary codes.
-    """
 
     if codes is None:
         codes = {}
@@ -216,27 +100,10 @@ def generate_codes(node, current_code="", codes=None):
 
 
 # ==========================================================
-# Encoding Process
+# Encoding
 # ==========================================================
 
 def encode_text(text, codes):
-    """
-    Converts the original text into a compressed
-    binary sequence using Huffman codes.
-
-    Parameters
-    ----------
-    text : str
-        Original user input text.
-
-    codes : dict
-        Dictionary containing Huffman codes.
-
-    Returns
-    -------
-    str
-        Encoded binary string.
-    """
 
     encoded = ""
 
@@ -247,27 +114,10 @@ def encode_text(text, codes):
 
 
 # ==========================================================
-# Decoding Process
+# Decoding
 # ==========================================================
 
 def decode_text(encoded_text, root):
-    """
-    Decodes a Huffman encoded binary sequence
-    back to the original text.
-
-    Parameters
-    ----------
-    encoded_text : str
-        Binary string produced by the encoding stage.
-
-    root : Node
-        Root node of the Huffman Tree.
-
-    Returns
-    -------
-    str
-        Decoded text.
-    """
 
     decoded = ""
     current = root
@@ -287,23 +137,10 @@ def decode_text(encoded_text, root):
 
 
 # ==========================================================
-# Huffman Tree Visualization
+# Tree Visualization
 # ==========================================================
 
 def visualize_tree(node):
-    """
-    Generates a graphical representation of the Huffman Tree
-    using Graphviz.
-
-    Each node shows:
-    - Character
-    - Frequency
-
-    Returns
-    -------
-    Digraph
-        Graphviz object representing the Huffman Tree.
-    """
 
     dot = Digraph()
 
@@ -312,9 +149,9 @@ def visualize_tree(node):
         if node is None:
             return
 
-        node_label = f"{node.char}:{node.freq}" if node.char else f"{node.freq}"
+        label = f"{node.char}:{node.freq}" if node.char else f"{node.freq}"
 
-        dot.node(str(id(node)), node_label)
+        dot.node(str(id(node)), label)
 
         if parent:
             dot.edge(str(id(parent)), str(id(node)))
@@ -328,68 +165,126 @@ def visualize_tree(node):
 
 
 # ==========================================================
-# Streamlit User Interface
+# Streamlit UI
 # ==========================================================
 
 st.title("Advanced Huffman Coding Compression Analyzer")
 
 st.markdown("""
-This interactive tool demonstrates the **Huffman Coding algorithm**,
-a fundamental technique used in **lossless data compression**.
+This tool demonstrates the **Huffman Coding algorithm**, a fundamental
+technique used in **lossless data compression**.
 
-The algorithm improves storage efficiency by assigning **short binary
-codes to frequent characters** and **longer codes to rare characters**.
+Frequent characters receive **short binary codes**, while rare characters
+receive **longer codes**, reducing total storage size.
 """)
+
+# ==========================================================
+# TEXT COMPRESSION DEMO
+# ==========================================================
+
+st.header("Text Compression Demo")
 
 text = st.text_area("Enter text to compress")
 
-if st.button("Run Analysis"):
+if st.button("Run Text Analysis"):
 
     if text.strip() == "":
-        st.warning("Please enter some text.")
+        st.warning("Please enter some text")
+
     else:
 
-        # Frequency Analysis
         freq = build_frequency_table(text)
 
-        st.header("1️⃣ Character Frequency Analysis")
+        st.subheader("Character Frequency")
         st.write(freq)
 
-        # Build Tree
         root = build_huffman_tree(freq)
 
-        st.header("2️⃣ Huffman Tree Visualization")
+        st.subheader("Huffman Tree")
         dot = visualize_tree(root)
         st.graphviz_chart(dot)
 
-        # Generate Codes
         codes = generate_codes(root)
 
-        st.header("3️⃣ Huffman Codes")
+        st.subheader("Huffman Codes")
         st.write(codes)
 
-        # Encoding
         encoded = encode_text(text, codes)
 
-        st.header("4️⃣ Encoded Binary")
+        st.subheader("Encoded Binary")
         st.code(encoded)
 
-        # Decoding
         decoded = decode_text(encoded, root)
 
-        st.header("5️⃣ Decoded Text")
+        st.subheader("Decoded Text")
         st.write(decoded)
 
-        # Compression Analysis
         original_bits = len(text) * 8
         compressed_bits = len(encoded)
 
         ratio = compressed_bits / original_bits
 
-        st.header("6️⃣ Compression Efficiency")
+        st.subheader("Compression Efficiency")
 
         st.write("Original Bits:", original_bits)
         st.write("Compressed Bits:", compressed_bits)
-        st.write("Compression Ratio:", round(ratio, 2))
+        st.write("Compression Ratio:", round(ratio, 3))
 
-        st.success("Compression analysis completed successfully.")
+
+# ==========================================================
+# JPEG STYLE IMAGE DEMO
+# ==========================================================
+
+st.header("JPEG-Style Image Compression Demo")
+
+uploaded_image = st.file_uploader(
+    "Upload an image",
+    type=["png", "jpg", "jpeg"]
+)
+
+if uploaded_image is not None:
+
+    image = Image.open(uploaded_image)
+
+    gray = image.convert("L")
+
+    st.subheader("Original Grayscale Image")
+    st.image(gray, width=300)
+
+    pixels = np.array(gray)
+
+    flat_pixels = pixels.flatten()
+
+    pixel_string = " ".join(map(str, flat_pixels))
+
+    freq = build_frequency_table(pixel_string)
+
+    root = build_huffman_tree(freq)
+
+    codes = generate_codes(root)
+
+    encoded = encode_text(pixel_string, codes)
+
+    decoded = decode_text(encoded, root)
+
+    decoded_pixels = np.array(list(map(int, decoded.split())))
+
+    decoded_pixels = decoded_pixels.reshape(pixels.shape)
+
+    reconstructed = Image.fromarray(decoded_pixels.astype(np.uint8))
+
+    st.subheader("Reconstructed Image After Huffman Decoding")
+    st.image(reconstructed, width=300)
+
+    original_bits = flat_pixels.size * 8
+    compressed_bits = len(encoded)
+
+    ratio = compressed_bits / original_bits
+
+    st.subheader("Image Compression Analysis")
+
+    st.write("Original Bits:", original_bits)
+    st.write("Compressed Bits:", compressed_bits)
+    st.write("Compression Ratio:", round(ratio, 3))
+
+    st.success("JPEG-style Huffman compression demo completed.")
